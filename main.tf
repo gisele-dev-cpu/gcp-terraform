@@ -40,10 +40,10 @@ module "auth" {
   common_labels     = local.common_labels
   terraform_sa_name = module.project.terraform_sa_name
 
-  enable_wif  = var.enable_wif
-  github_org  = var.github_org
-  github_repo = var.github_repo
-  gitlab_url  = var.gitlab_url
+  enable_wif    = var.enable_wif
+  github_org    = var.github_org
+  github_repo   = var.github_repo
+  gitlab_url    = var.gitlab_url
   enable_sa_key = var.enable_sa_key
 
   depends_on = [module.project]

@@ -54,7 +54,7 @@ locals {
     "cloudkms.googleapis.com",
     "artifactregistry.googleapis.com",
     "dns.googleapis.com",
-    "sts.googleapis.com",           # required for Workload Identity Federation
+    "sts.googleapis.com", # required for Workload Identity Federation
   ], var.extra_apis)
 }
 
@@ -98,12 +98,12 @@ resource "google_service_account" "terraform" {
 # Grant the Terraform SA the roles it needs to manage all resources
 resource "google_project_iam_member" "terraform_roles" {
   for_each = toset([
-    "roles/editor",                    # broad resource management
-    "roles/iam.securityAdmin",         # manage IAM policies
+    "roles/editor",                          # broad resource management
+    "roles/iam.securityAdmin",               # manage IAM policies
     "roles/resourcemanager.projectIamAdmin", # set project-level IAM
-    "roles/storage.admin",             # manage state bucket
-    "roles/compute.networkAdmin",      # networking
-    "roles/container.admin",           # GKE
+    "roles/storage.admin",                   # manage state bucket
+    "roles/compute.networkAdmin",            # networking
+    "roles/container.admin",                 # GKE
   ])
 
   project = google_project.project.project_id

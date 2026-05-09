@@ -3,9 +3,9 @@
 # =============================================================================
 
 # ── Project ───────────────────────────────────────────────────────────────────
-project_id         = "gisele-platform-dev"
-project_name       = "security-dev"
-org_id             = "395135208830"          # gcloud organizations list
+project_id   = "gisele-platform-dev"
+project_name = "security-dev"
+org_id       = "395135208830" # gcloud organizations list
 #folder_id          = null                    # or "folders/987654321" to nest under a folder
 billing_account_id = "01FB47-2E2153-977634" # gcloud billing accounts list
 region             = "us-central1"
@@ -15,11 +15,11 @@ environment        = "dev"
 extra_apis = [] # add any project-specific APIs here
 
 # ── Auth / CI-CD ──────────────────────────────────────────────────────────────
-enable_wif  = true
-github_org  = "gisele-dev-cpu"   # your GitHub org or username
-github_repo = "gcp-terraform"           # restrict to a specific repo, or set null for all repos
-gitlab_url  = null              # set to "https://gitlab.com" if using GitLab CI
-enable_sa_key = false           # set true only if WIF is not available
+enable_wif    = true
+github_org    = "gisele-dev-cpu" # your GitHub org or username
+github_repo   = "gcp-terraform"  # restrict to a specific repo, or set null for all repos
+gitlab_url    = null             # set to "https://gitlab.com" if using GitLab CI
+enable_sa_key = false            # set true only if WIF is not available
 
 /*
 # ── Networking ────────────────────────────────────────────────────────────────

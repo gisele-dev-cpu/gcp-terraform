@@ -14,7 +14,7 @@ resource "google_iam_workload_identity_pool" "pool" {
 
   project                   = var.project_id
   workload_identity_pool_id = "cicd-pool-${var.environment}"
-  display_name = "CI/CD Pool ${var.environment}"
+  display_name              = "CI/CD Pool ${var.environment}"
   description               = "Allows CI/CD systems to authenticate without keys"
 }
 
@@ -41,7 +41,7 @@ resource "google_iam_workload_identity_pool_provider" "github" {
 
   attribute_condition = var.github_repo != null ? (
     "assertion.repository == '${var.github_org}/${var.github_repo}'"
-  ) : (
+    ) : (
     "assertion.repository.startsWith('${var.github_org}/')"
   )
 }
@@ -61,10 +61,10 @@ resource "google_iam_workload_identity_pool_provider" "gitlab" {
   }
 
   attribute_mapping = {
-    "google.subject"             = "assertion.sub"
-    "attribute.project_path"     = "assertion.project_path"
-    "attribute.ref"              = "assertion.ref"
-    "attribute.ref_type"         = "assertion.ref_type"
+    "google.subject"         = "assertion.sub"
+    "attribute.project_path" = "assertion.project_path"
+    "attribute.ref"          = "assertion.ref"
+    "attribute.ref_type"     = "assertion.ref_type"
   }
 }
 
@@ -77,7 +77,7 @@ resource "google_service_account_iam_member" "wif_github_impersonation" {
 
   member = var.github_repo != null ? (
     "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.pool[0].name}/attribute.repository/${var.github_org}/${var.github_repo}"
-  ) : (
+    ) : (
     "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.pool[0].name}/attribute.repository_owner/${var.github_org}"
   )
 }

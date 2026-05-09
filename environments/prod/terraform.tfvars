@@ -11,7 +11,7 @@ vpc_name            = "main-vpc"
 subnet_cidr         = "10.10.0.0/20"
 pod_cidr            = "10.11.0.0/16"
 svc_cidr            = "10.12.0.0/20"
-allowed_ssh_ranges  = []             # no direct SSH in prod; use IAP
+allowed_ssh_ranges  = [] # no direct SSH in prod; use IAP
 allowed_http_ranges = ["0.0.0.0/0"]
 
 service_accounts = {
@@ -57,7 +57,7 @@ buckets = {
 databases = {
   "app-db" = {
     database_version    = "POSTGRES_15"
-    tier                = "db-custom-4-15360"  # 4 vCPU, 15GB RAM
+    tier                = "db-custom-4-15360" # 4 vCPU, 15GB RAM
     deletion_protection = true
     backup_enabled      = true
     databases           = ["app", "analytics"]

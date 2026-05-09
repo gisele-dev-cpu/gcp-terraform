@@ -100,10 +100,10 @@ variable "buckets" {
       storage_class_target = optional(string)
     })), [])
     cors = optional(list(object({
-      origins         = list(string)
-      methods         = list(string)
+      origins          = list(string)
+      methods          = list(string)
       response_headers = list(string)
-      max_age_seconds = number
+      max_age_seconds  = number
     })), [])
   }))
   default = {}
@@ -112,11 +112,11 @@ variable "buckets" {
 variable "databases" {
   description = "Map of Cloud SQL instances to create"
   type = map(object({
-    database_version = string
-    tier             = optional(string, "db-f1-micro")
+    database_version    = string
+    tier                = optional(string, "db-f1-micro")
     deletion_protection = optional(bool, true)
-    backup_enabled   = optional(bool, true)
-    databases        = optional(list(string), [])
+    backup_enabled      = optional(bool, true)
+    databases           = optional(list(string), [])
   }))
   default = {}
 }
@@ -138,12 +138,12 @@ variable "vm_instances" {
 variable "gke_clusters" {
   description = "Map of GKE clusters to create"
   type = map(object({
-    node_count        = optional(number, 1)
-    machine_type      = optional(string, "e2-medium")
-    min_node_count    = optional(number, 1)
-    max_node_count    = optional(number, 3)
-    disk_size_gb      = optional(number, 100)
-    private_cluster   = optional(bool, true)
+    node_count         = optional(number, 1)
+    machine_type       = optional(string, "e2-medium")
+    min_node_count     = optional(number, 1)
+    max_node_count     = optional(number, 3)
+    disk_size_gb       = optional(number, 100)
+    private_cluster    = optional(bool, true)
     kubernetes_version = optional(string, "latest")
   }))
   default = {}
@@ -152,13 +152,13 @@ variable "gke_clusters" {
 variable "instance_groups" {
   description = "Map of managed instance groups"
   type = map(object({
-    machine_type  = optional(string, "e2-medium")
-    image         = optional(string, "debian-cloud/debian-12")
-    target_size   = optional(number, 1)
-    min_replicas  = optional(number, 1)
-    max_replicas  = optional(number, 5)
+    machine_type    = optional(string, "e2-medium")
+    image           = optional(string, "debian-cloud/debian-12")
+    target_size     = optional(number, 1)
+    min_replicas    = optional(number, 1)
+    max_replicas    = optional(number, 5)
     cooldown_period = optional(number, 60)
-    tags          = optional(list(string), [])
+    tags            = optional(list(string), [])
   }))
   default = {}
 }
