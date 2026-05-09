@@ -11,8 +11,8 @@ crash.*.log
 
 # Exclude all .tfvars files that are likely to contain sensitive data
 # Use .tfvars.example files committed instead
-*.tfvars
-!*.tfvars.example
+# *.tfvars
+!# *.tfvars.example
 
 # Override files (local overrides - never commit these)
 override.tf
