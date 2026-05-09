@@ -104,7 +104,7 @@ jobs:
         # Nothing is actually changed in GCP at this step — just a preview
 
       # ── Step 8: Apply the changes (only on push to main) ───────────────────
-      - - name: Terraform Apply
+      - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -var-file=environments/${{ env.ENVIRONMENT }}/terraform.tfvars -auto-approve
         # Actually creates/updates/deletes resources in GCP
