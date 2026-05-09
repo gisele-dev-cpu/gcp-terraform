@@ -1,0 +1,100 @@
+name: Terraform
+
+on:
+  push:
+    branches: [main]
+    paths: ['**.tf', '**.tfvars']
+  pull_request:
+    branches: [main]
+    paths: ['**.tf', '**.tfvars']
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to target'
+        required: true
+        default: 'dev'
+        type: choice
+        options: [dev, staging, prod]
+
+env:
+  TF_VERSION: '1.7.5'
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
+
+permissions:
+  contents: read
+  id-token: write   # required for Workload Identity Federation
+  pull-requests: write
+
+jobs:
+  terraform:
+    name: Terraform ${{ github.event.inputs.environment || 'dev' }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Authenticate to GCP via Workload Identity Federation (keyless) ──────
+      - name: Authenticate to GCP (WIF)
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          # These values come from Terraform outputs after first apply:
+          #   terraform output wif_provider_github
+          #   terraform output terraform_sa_email
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_TERRAFORM_SA_EMAIL }}
+
+      # ── Fallback: SA key auth (only if WIF is not set up yet) ────────────────
+      # Uncomment this block and comment out the WIF block above if needed:
+      # - name: Authenticate to GCP (SA Key)
+      #   uses: google-github-actions/auth@v2
+      #   with:
+      #     credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config=backends/${{ env.ENVIRONMENT }}.gcs.tfbackend
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan \
+            -var-file=environments/${{ env.ENVIRONMENT }}/terraform.tfvars \
+            -out=tfplan \
+            -detailed-exitcode
+        continue-on-error: true  # exitcode 2 = changes present (not an error)
+
+      # Post plan output as PR comment
+      - name: Comment Plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `#### Terraform Plan 📖 \`${{ steps.plan.outcome }}\`
+            \`\`\`
+            ${{ steps.plan.outputs.stdout }}
+            \`\`\``;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve tfplan

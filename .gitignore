@@ -1,0 +1,28 @@
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Exclude all .tfvars files that are likely to contain sensitive data
+# Use .tfvars.example files committed instead
+*.tfvars
+!*.tfvars.example
+
+# Override files (local overrides - never commit these)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI configuration files
+.terraformrc
+terraform.rc
+
+# Sensitive backend configs
+*.tfbackend
