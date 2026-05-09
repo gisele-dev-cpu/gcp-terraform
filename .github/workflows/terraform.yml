@@ -94,7 +94,7 @@ jobs:
 
       # ── Step 7: Preview what changes will be made ──────────────────────────
       - name: Terraform Plan
-        run: terraform plan -detailed-exitcode
+        run: terraform plan -var-file=environments/${{ env.ENVIRONMENT }}/terraform.tfvars -detailed-exitcode
         continue-on-error: true
         # Shows exactly what Terraform would create, change, or delete in GCP
         # -detailed-exitcode returns:
@@ -104,9 +104,9 @@ jobs:
         # Nothing is actually changed in GCP at this step — just a preview
 
       # ── Step 8: Apply the changes (only on push to main) ───────────────────
-      - name: Terraform Apply
+      - - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve
+        run: terraform apply -var-file=environments/${{ env.ENVIRONMENT }}/terraform.tfvars -auto-approve
         # Actually creates/updates/deletes resources in GCP
         # -auto-approve skips the manual yes/no confirmation
         # The "if" condition means this ONLY runs when:
