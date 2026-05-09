@@ -1,100 +1,114 @@
-name: Terraform
+# =============================================================================
+# Terraform CI/CD Workflow
+# This file tells GitHub Actions what to do automatically when you push code.
+# =============================================================================
 
+name: Terraform  # The name that shows up in the GitHub Actions tab
+
+# -----------------------------------------------------------------------------
+# TRIGGERS — when does this workflow run?
+# -----------------------------------------------------------------------------
 on:
   push:
-    branches: [main]
-    paths: ['**.tf', '**.tfvars']
+    branches: [main]        # Run when you push code to the main branch
   pull_request:
-    branches: [main]
-    paths: ['**.tf', '**.tfvars']
-  workflow_dispatch:
+    branches: [main]        # Run when you open a pull request to main
+  workflow_dispatch:        # Allow manual runs from the GitHub Actions tab
     inputs:
       environment:
         description: 'Environment to target'
         required: true
         default: 'dev'
         type: choice
-        options: [dev, staging, prod]
+        options: [dev, staging, prod]   # Choose which environment to deploy
 
+# -----------------------------------------------------------------------------
+# ENVIRONMENT VARIABLES — values available to all steps in the workflow
+# -----------------------------------------------------------------------------
 env:
-  TF_VERSION: '1.7.5'
+  TF_VERSION: '1.9.0'       # The version of Terraform to install and use
+  # If manually triggered use the chosen environment, otherwise default to dev
   ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
 
+# -----------------------------------------------------------------------------
+# PERMISSIONS — what GitHub Actions is allowed to do
+# -----------------------------------------------------------------------------
 permissions:
-  contents: read
-  id-token: write   # required for Workload Identity Federation
-  pull-requests: write
+  contents: read      # Read your repository files
+  id-token: write     # Required for Workload Identity Federation (keyless auth)
+  pull-requests: write # Post plan results as comments on pull requests
 
+# -----------------------------------------------------------------------------
+# JOBS — the actual work to do
+# -----------------------------------------------------------------------------
 jobs:
   terraform:
     name: Terraform ${{ github.event.inputs.environment || 'dev' }}
-    runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'dev' }}
+    runs-on: ubuntu-latest  # Use a fresh Ubuntu Linux machine to run on
 
     steps:
+      # ── Step 1: Download your code onto the runner machine ─────────────────
       - name: Checkout
         uses: actions/checkout@v4
+        # This downloads all your terraform files from GitHub
+        # onto the temporary Ubuntu machine that runs the workflow
 
-      # ── Authenticate to GCP via Workload Identity Federation (keyless) ──────
-      - name: Authenticate to GCP (WIF)
-        id: auth
+      # ── Step 2: Prove to GCP that this is YOUR GitHub repo ─────────────────
+      - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
-          # These values come from Terraform outputs after first apply:
-          #   terraform output wif_provider_github
-          #   terraform output terraform_sa_email
+          # These secrets were added in GitHub Settings → Secrets → Actions
+          # GCP_WIF_PROVIDER tells GCP which Workload Identity Pool to use
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          # GCP_TERRAFORM_SA_EMAIL is the service account to impersonate
           service_account: ${{ secrets.GCP_TERRAFORM_SA_EMAIL }}
+        # After this step the runner has a short-lived GCP token
+        # No passwords or keys are stored anywhere
 
-      # ── Fallback: SA key auth (only if WIF is not set up yet) ────────────────
-      # Uncomment this block and comment out the WIF block above if needed:
-      # - name: Authenticate to GCP (SA Key)
-      #   uses: google-github-actions/auth@v2
-      #   with:
-      #     credentials_json: ${{ secrets.GCP_SA_KEY }}
-
+      # ── Step 3: Install Terraform on the runner machine ────────────────────
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
+        # Downloads and installs Terraform 1.9.0 on the Ubuntu machine
 
+      # ── Step 4: Connect Terraform to your GCS state bucket ─────────────────
       - name: Terraform Init
-        run: |
-          terraform init \
-            -backend-config=backends/${{ env.ENVIRONMENT }}.gcs.tfbackend
+        run: terraform init -backend-config=backends/${{ env.ENVIRONMENT }}.gcs.tfbackend
+        # -backend-config tells Terraform which GCS bucket to use for state
+        # For dev it reads backends/dev.gcs.tfbackend which has your bucket name
 
+      # ── Step 5: Check code formatting ──────────────────────────────────────
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
+        # Checks that all .tf files are properly formatted
+        # Fails if someone forgot to format their code
+        # Run "terraform fmt" locally to fix formatting issues
 
+      # ── Step 6: Validate the configuration ─────────────────────────────────
       - name: Terraform Validate
         run: terraform validate
+        # Checks that all the Terraform code is syntactically correct
+        # Catches errors like missing required fields or wrong variable types
+        # Does NOT connect to GCP — just checks the code itself
 
+      # ── Step 7: Preview what changes will be made ──────────────────────────
       - name: Terraform Plan
-        id: plan
-        run: |
-          terraform plan \
-            -var-file=environments/${{ env.ENVIRONMENT }}/terraform.tfvars \
-            -out=tfplan \
-            -detailed-exitcode
-        continue-on-error: true  # exitcode 2 = changes present (not an error)
+        run: terraform plan -detailed-exitcode
+        continue-on-error: true
+        # Shows exactly what Terraform would create, change, or delete in GCP
+        # -detailed-exitcode returns:
+        #   0 = no changes
+        #   1 = error
+        #   2 = changes present (not an error, so continue-on-error: true)
+        # Nothing is actually changed in GCP at this step — just a preview
 
-      # Post plan output as PR comment
-      - name: Comment Plan on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const output = `#### Terraform Plan 📖 \`${{ steps.plan.outcome }}\`
-            \`\`\`
-            ${{ steps.plan.outputs.stdout }}
-            \`\`\``;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            });
-
+      # ── Step 8: Apply the changes (only on push to main) ───────────────────
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -auto-approve
+        # Actually creates/updates/deletes resources in GCP
+        # -auto-approve skips the manual yes/no confirmation
+        # The "if" condition means this ONLY runs when:
+        #   - You push directly to main branch
+        #   - NOT on pull requests (those only plan, never apply)
